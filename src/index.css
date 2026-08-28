@@ -1,0 +1,212 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------
+   The Peacock — design tokens.
+   Palette and rules from .claude/rules/art-direction.md.
+   No box-shadow, no backdrop-filter, no gradients on panels or
+   buttons, no radius above 3px. Anywhere.
+   ------------------------------------------------------------------ */
+
+:root {
+  /* Background — never appears on geometry */
+  --mv-sky-top: #bfe0d2;
+  --mv-sky-bottom: #94c4b4;
+
+  /* Available table / active architecture */
+  --mv-coral-top: #f79c88;
+  --mv-coral-light: #ee7460;
+  --mv-coral-dark: #ce5341;
+
+  /* Booked table / background architecture — drained, low contrast */
+  --mv-drained-top: #d9caba;
+  --mv-drained-light: #cdbcaa;
+  --mv-drained-dark: #bfab98;
+
+  /* Stone — floors, platforms, stairs */
+  --mv-stone-top: #f6efe4;
+  --mv-stone-light: #e6dccc;
+  --mv-stone-dark: #d2c6b4;
+
+  /* Accent — selected state only. Ceiling: 3% of screen pixels. */
+  --mv-accent: #f2c230;
+  --mv-accent-dark: #d9a61c;
+
+  /* Interactive markers, small teal inlays */
+  --mv-marker: #2e7d7d;
+
+  /* Type and hairlines */
+  --mv-ink: #3a3247;
+
+  --mv-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --mv-radius: 2px;
+  --mv-hairline: color-mix(in srgb, var(--mv-ink) 12%, transparent);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--mv-sky-bottom);
+  color: var(--mv-ink);
+  font-family: Karla, 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- Type scale: 11 / 13 / 16 / 22 / 40. Nothing between. --------- */
+
+.t-11 { font-size: 11px; }
+.t-13 { font-size: 13px; }
+.t-16 { font-size: 16px; }
+.t-22 { font-size: 22px; }
+.t-40 { font-size: 40px; line-height: 1.1; }
+
+/* Display face — Jost 300, uppercase, wide tracking (Reference 5) */
+.display {
+  font-family: Jost, 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+.ink-60 { color: color-mix(in srgb, var(--mv-ink) 60%, transparent); }
+.ink-45 { color: color-mix(in srgb, var(--mv-ink) 45%, transparent); }
+.ink-35 { color: color-mix(in srgb, var(--mv-ink) 35%, transparent); }
+
+/* --- Panels ------------------------------------------------------- */
+
+.panel {
+  background: var(--mv-stone-top);
+  border: 1px solid var(--mv-hairline);
+  border-radius: var(--mv-radius);
+  padding: 16px;
+}
+
+.rule {
+  height: 1px;
+  background: var(--mv-hairline);
+  border: 0;
+  margin: 0;
+}
+
+/* --- Buttons ------------------------------------------------------ */
+
+.btn {
+  font-family: Karla, sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--mv-radius);
+  background: color-mix(in srgb, var(--mv-ink) 8%, transparent);
+  color: var(--mv-ink);
+  cursor: pointer;
+  transition: background 160ms var(--mv-ease), color 160ms var(--mv-ease);
+  text-align: center;
+}
+
+.btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--mv-ink) 14%, transparent);
+}
+
+.btn--primary {
+  background: var(--mv-coral-light);
+  color: var(--mv-stone-top);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--mv-coral-dark);
+}
+
+.btn--selected {
+  background: var(--mv-accent);
+  color: var(--mv-ink);
+}
+
+.btn--selected:hover:not(:disabled) {
+  background: var(--mv-accent-dark);
+}
+
+.btn:disabled {
+  background: var(--mv-drained-light);
+  color: color-mix(in srgb, var(--mv-ink) 35%, transparent);
+  cursor: not-allowed;
+}
+
+.btn--quiet {
+  background: transparent;
+  border-color: var(--mv-hairline);
+}
+
+/* --- Fields ------------------------------------------------------- */
+
+.field {
+  width: 100%;
+  font-family: Karla, sans-serif;
+  font-size: 13px;
+  padding: 10px 12px;
+  color: var(--mv-ink);
+  background: var(--mv-stone-light);
+  border: 1px solid var(--mv-hairline);
+  border-radius: var(--mv-radius);
+  transition: border-color 160ms var(--mv-ease);
+}
+
+.field:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--mv-ink) 40%, transparent);
+}
+
+.field::placeholder {
+  color: color-mix(in srgb, var(--mv-ink) 35%, transparent);
+}
+
+.label {
+  display: block;
+  font-family: Jost, sans-serif;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--mv-ink) 60%, transparent);
+  margin-bottom: 8px;
+}
+
+/* --- Motion (§9): one curve, slide-and-fade, never scale ---------- */
+
+@keyframes mv-enter {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.enter {
+  animation: mv-enter 320ms var(--mv-ease) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* Scrollbars stay out of the way — the frame is the composition */
+.scroll-y {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mv-stone-dark) transparent;
+}
