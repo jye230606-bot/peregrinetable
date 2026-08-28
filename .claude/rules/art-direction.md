@@ -1,3 +1,10 @@
+---
+paths:
+  - "src/**/*.{tsx,jsx,ts,css}"
+  - "**/*.module.css"
+  - "tailwind.config.*"
+---
+
 # ART DIRECTION — READ BEFORE WRITING ANY UI CODE
 
 Six reference images are attached. They are the specification, not inspiration. Where this document and your instincts disagree, this document wins. Where this document and the images disagree, the images win.
