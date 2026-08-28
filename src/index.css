@@ -281,3 +281,170 @@ body {
 .app__body > .scene {
   flex: 1 1 auto;
 }
+
+/* --- Guest flow ------------------------------------------------------ */
+
+.guest__scene {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+}
+
+/* The gate sits on the sky, before there is any scene to sit beside. */
+.gate-wrap {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+  background: linear-gradient(180deg, var(--mv-sky-top) 0%, var(--mv-sky-bottom) 100%);
+}
+
+.gate {
+  width: 100%;
+  max-width: 440px;
+  padding: 24px;
+}
+
+.gate__title {
+  margin: 0;
+  font-weight: 300;
+}
+
+.gate__lede {
+  margin: 8px 0 16px;
+}
+
+.gate__field {
+  margin: 16px 0;
+}
+
+.gate__date {
+  margin-top: 8px;
+}
+
+.gate__service {
+  margin-bottom: 16px;
+}
+
+.gate__service > .label,
+.gate__service > .display {
+  display: block;
+  margin: 8px 0;
+  letter-spacing: 0.18em;
+}
+
+.gate__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* Summary bar — the gate, collapsed. Click to reopen. */
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 24px;
+  background: var(--mv-stone-top);
+  border: 0;
+  border-bottom: 1px solid var(--mv-hairline);
+  color: var(--mv-ink);
+  font-family: Karla, sans-serif;
+  text-align: left;
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: background 160ms var(--mv-ease);
+}
+
+.summary:hover {
+  background: var(--mv-stone-light);
+}
+
+.summary__dot {
+  width: 3px;
+  height: 3px;
+  background: color-mix(in srgb, var(--mv-ink) 30%, transparent);
+}
+
+.summary__change {
+  margin-left: auto;
+}
+
+/* Docked column. Always present, so the scene never resizes. */
+.dock {
+  flex: 0 0 328px;
+  min-height: 0;
+  background: var(--mv-stone-top);
+  border-left: 1px solid var(--mv-hairline);
+  overflow-y: auto;
+}
+
+.dock__body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dock__head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dock__cta {
+  margin-top: 8px;
+}
+
+.dock__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.dock__error {
+  color: var(--mv-coral-dark);
+}
+
+.dock label.stack-8 {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stack-8 {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.grid-8 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+
+.row-btn {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+}
+
+.summary-list {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.summary-list dd {
+  margin: 0;
+}
+
+textarea.field {
+  resize: vertical;
+  font-family: Karla, sans-serif;
+}

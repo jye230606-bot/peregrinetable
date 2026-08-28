@@ -16,6 +16,7 @@ import Room from './Room'
 import Shadows from './Shadows'
 import TableMesh from './TableMesh'
 import { applyQuarterToAll } from './geometry'
+import { auditScene } from './audit'
 import { ROTATE_MS, standardEase } from './ease'
 import {
   CASE_HEIGHT,
@@ -242,9 +243,14 @@ export default function FloorPlan({
         flat
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
-        onCreated={({ scene }) => {
+        onCreated={(state) => {
           // Fog dissolves the far edge of the room into the background (§6).
-          scene.fog = new Fog(hex.fog, FOG_NEAR, FOG_FAR)
+          state.scene.fog = new Fog(hex.fog, FOG_NEAR, FOG_FAR)
+          if (import.meta.env.DEV) {
+            // Acceptance checks read the scene graph, not a screenshot.
+            ;(window as unknown as Record<string, unknown>).__auditScene = () =>
+              auditScene(state.scene, state.camera)
+          }
         }}
       >
         <IsoCamera zoomMul={zoomMul} />

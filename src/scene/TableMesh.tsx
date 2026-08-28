@@ -11,15 +11,22 @@ import { materialsFor } from './shading'
 
 /** Booking state is read as atmospheric depth, not as a colour legend (§4). */
 function toneFor(state: TableState, isSelected: boolean): { key: string; tone: Tone } {
-  if (isSelected) return { key: 'selected', tone: selectedTone }
-  switch (state) {
-    case 'available':
-      return { key: 'coral', tone: coral }
-    case 'partly':
-      return { key: 'partly', tone: partly }
-    default:
-      // Fully booked and too-small both recede into the background city.
-      return { key: 'booked', tone: booked }
+  const base =
+    state === 'available'
+      ? { key: 'coral', tone: coral }
+      : state === 'partly'
+        ? { key: 'partly', tone: partly }
+        : // Fully booked and too-small both recede into the background city.
+          { key: 'booked', tone: booked }
+
+  if (!isSelected) return base
+  // Selection lifts the top face to the accent and leaves the sides alone. On an
+  // available table that means coral sides, exactly as §4 describes; on a booked
+  // or too-small one the sides stay drained, so selecting a table you cannot have
+  // never makes it advance out of the background.
+  return {
+    key: `selected-${base.key}`,
+    tone: { top: selectedTone.top, mid: base.tone.mid, dark: base.tone.dark },
   }
 }
 

@@ -50,7 +50,7 @@ export const PLINTH_HEIGHT = 0.08
 export const HOVER_LIFT = 0.06
 
 /** Shadows are one flat polygon per object, offset in a single global direction (§6). */
-export const SHADOW_OFFSET: [number, number] = [0.3, 0.12]
+export const SHADOW_OFFSET: [number, number] = [0.42, 0.18]
 export const SHADOW_OPACITY = 0.1
 
 export const FOG_NEAR = 27

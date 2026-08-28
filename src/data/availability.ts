@@ -149,3 +149,98 @@ export function currentOrNext(
   if (live) return live
   return mine.find((b) => new Date(b.startsAt).getTime() >= t) ?? mine[mine.length - 1] ?? null
 }
+
+// ---------------------------------------------------------------------------
+// Time-specific reads. The guest picks a party size, a date and a time up
+// front, so every table resolves to exactly one of three states at that
+// moment — there is no middle band to show and no legend to read.
+// ---------------------------------------------------------------------------
+
+export type SlotState = 'available' | 'too-small' | 'booked'
+
+/** How a table reads on the floor plan for one party, on one date, at one time. */
+export function tableStateAt(
+  table: Table,
+  slot: Date,
+  partySize: number,
+  bookings: Booking[],
+): SlotState {
+  if (table.seats < partySize) return 'too-small'
+  return isSlotFree(slot, partySize, bookingsFor(table.id, bookings)) ? 'available' : 'booked'
+}
+
+/** The booking holding a table across a given moment, if any. */
+export function bookingAt(tableId: string, when: Date, bookings: Booking[]): Booking | null {
+  const t = when.getTime()
+  return (
+    bookingsFor(tableId, bookings)
+      .filter(holdsTable)
+      .find((b) => {
+        const [s, e] = bookingSpan(b)
+        return t >= s && t < e
+      }) ?? null
+  )
+}
+
+/** What a booking actually occupies, for showing a guest why a table is out. */
+export function sittingWindow(b: Booking): [Date, Date] {
+  const start = new Date(b.startsAt)
+  return [start, new Date(start.getTime() + b.durationMin * 60_000)]
+}
+
+/** This table's first free start time at or after `after`. */
+export function nextFreeSlot(
+  table: Table,
+  date: DateKey,
+  partySize: number,
+  bookings: Booking[],
+  after: Date,
+): Date | null {
+  return (
+    availableSlots(table, date, partySize, bookings).find((s) => s.getTime() >= after.getTime()) ??
+    null
+  )
+}
+
+/**
+ * Other tables free at exactly this time, nearest first. Same zone beats a
+ * shorter walk across the room, which is how a host would think about it.
+ */
+export function alternativesAt(
+  from: Table,
+  tables: Table[],
+  slot: Date,
+  partySize: number,
+  bookings: Booking[],
+  limit = 3,
+): Table[] {
+  return tables
+    .filter(
+      (t) =>
+        t.id !== from.id &&
+        t.seats >= partySize &&
+        isSlotFree(slot, partySize, bookingsFor(t.id, bookings)),
+    )
+    .sort((a, b) => cost(from, a) - cost(from, b))
+    .slice(0, limit)
+}
+
+function cost(from: Table, t: Table): number {
+  return Math.hypot(t.x - from.x, t.y - from.y) + (t.zone === from.zone ? 0 : 4)
+}
+
+/** The bookings standing between a party and a table at a given start time. */
+export function blockersFor(
+  tableId: string,
+  slot: Date,
+  partySize: number,
+  bookings: Booking[],
+): Booking[] {
+  const want: [number, number] = [
+    slot.getTime(),
+    slot.getTime() + occupancyMinutes(partySize) * 60_000,
+  ]
+  return bookingsFor(tableId, bookings)
+    .filter(holdsTable)
+    .filter((b) => overlaps(want, bookingSpan(b)))
+}

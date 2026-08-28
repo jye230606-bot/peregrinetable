@@ -1,6 +1,6 @@
 import type { Booking, DataAdapter, DateKey, NewBooking, Session, Table } from './types'
 import { tables } from './venue'
-import { at, dateKey, occupancyMinutes, shiftDays, sittingFor, todayKey } from './time'
+import { at, dateKey, shiftDays, sittingFor, todayKey } from './time'
 
 /**
  * localStorage-backed adapter. Zero backend: everything lives in the browser,
@@ -9,9 +9,9 @@ import { at, dateKey, occupancyMinutes, shiftDays, sittingFor, todayKey } from '
  * The Supabase adapter slots in here — same DataAdapter shape, swapped in src/data/index.ts.
  */
 
-const KEY_BOOKINGS = 'peacock.bookings.v1'
+const KEY_BOOKINGS = 'peacock.bookings.v2'
 const KEY_SESSION = 'peacock.session.v1'
-const KEY_SEEDED = 'peacock.seeded.v1'
+const KEY_SEEDED = 'peacock.seeded.v2'
 
 /** Placeholder owner auth. Deliberately trivial — a real one replaces it whole. */
 const OWNER_PASSCODE = '2468'
@@ -44,105 +44,57 @@ function write(key: string, value: unknown) {
 
 // --- Seed ------------------------------------------------------------------
 
-const SEED_NAMES: Array<[string, string, string]> = [
-  ['Ana Ferreira', '0412 884 201', 'ana.ferreira@example.com'],
-  ['Marcus Hale', '0403 771 950', 'm.hale@example.com'],
-  ['Priya Raman', '0431 209 668', 'priya.raman@example.com'],
-  ['Tom Whitlock', '0455 310 872', 'twhitlock@example.com'],
-  ['Sinead Byrne', '0421 664 118', 'sinead.b@example.com'],
-  ['Danny Okafor', '0498 002 745', 'd.okafor@example.com'],
-  ['Rachel Lim', '0417 553 902', 'rachel.lim@example.com'],
-  ['Josef Novak', '0466 128 337', 'j.novak@example.com'],
-  ['Bea Consalvi', '0402 917 460', 'bea.c@example.com'],
-  ['Hugh Fairweather', '0439 845 172', 'hugh.f@example.com'],
-  ['Yuki Tanaka', '0425 336 019', 'yuki.tanaka@example.com'],
-  ['Nadia Haddad', '0411 728 553', 'nadia.h@example.com'],
+/**
+ * A hand-authored day rather than a random one. Fifteen bookings across today
+ * and tomorrow, clustered on the lunch and dinner peaks, chosen so that any
+ * party size lands on a floor plan with a real mix of states rather than a
+ * uniformly half-full room.
+ */
+type SeedRow = [
+  day: 0 | 1,
+  tableId: string,
+  time: string,
+  partySize: number,
+  guestName: string,
+  phone: string,
+  email: string,
+  notes?: string,
 ]
 
-const SEED_NOTES = [
-  'Window if possible',
-  'Birthday — bringing a cake',
-  'One high chair',
-  'Coeliac in the party',
-  '',
-  '',
-  '',
-  'Regular, likes the courtyard',
+const SEED: SeedRow[] = [
+  // Today
+  [0, 'd1', '12:00', 4, 'Ana Ferreira', '0412 884 201', 'ana.ferreira@example.com', 'Window if possible'],
+  [0, 'b5', '12:30', 3, 'Marcus Hale', '0403 771 950', 'm.hale@example.com'],
+  [0, 'd5', '13:00', 5, 'Priya Raman', '0431 209 668', 'priya.raman@example.com', 'One high chair'],
+  [0, 'c1', '18:00', 7, 'Tom Whitlock', '0455 310 872', 'twhitlock@example.com', 'Birthday — bringing a cake'],
+  [0, 'b1', '18:30', 2, 'Sinead Byrne', '0421 664 118', 'sinead.b@example.com'],
+  [0, 'd2', '18:30', 4, 'Danny Okafor', '0498 002 745', 'd.okafor@example.com'],
+  [0, 'd3', '19:00', 4, 'Rachel Lim', '0417 553 902', 'rachel.lim@example.com', 'Coeliac in the party'],
+  [0, 'd4', '19:00', 2, 'Josef Novak', '0466 128 337', 'j.novak@example.com'],
+  [0, 'd7', '19:30', 4, 'Bea Consalvi', '0402 917 460', 'bea.c@example.com'],
+  [0, 'b3', '20:00', 2, 'Hugh Fairweather', '0439 845 172', 'hugh.f@example.com'],
+  // Tomorrow
+  [1, 'c2', '12:30', 6, 'Yuki Tanaka', '0425 336 019', 'yuki.tanaka@example.com', 'Regular, likes the courtyard'],
+  [1, 'd6', '13:00', 4, 'Nadia Haddad', '0411 728 553', 'nadia.h@example.com'],
+  [1, 'b2', '18:00', 2, 'Elliot Marsh', '0409 615 284', 'e.marsh@example.com'],
+  [1, 'd5', '19:00', 6, 'Carmen Ruiz', '0434 880 176', 'c.ruiz@example.com'],
+  [1, 'c1', '20:00', 8, 'Owen Pryce', '0451 302 947', 'owen.pryce@example.com', 'Long table, one wheelchair'],
 ]
-
-/** Deterministic small PRNG so a reload doesn't reshuffle the room. */
-function mulberry(seed: number) {
-  return () => {
-    seed |= 0
-    seed = (seed + 0x6d2b79f5) | 0
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
 
 function seedBookings(): Booking[] {
-  const out: Booking[] = []
-  const rand = mulberry(20250828)
   const today = todayKey()
-
-  // Today plus the next three days, so a guest browsing forward sees a room
-  // that empties out rather than one that is uniformly half full.
-  const days: Array<[DateKey, number]> = [
-    [today, 0.8],
-    [shiftDays(today, 1), 0.62],
-    [shiftDays(today, 2), 0.4],
-    [shiftDays(today, 3), 0.22],
-  ]
-
-  let n = 0
-  for (const [key, density] of days) {
-    for (const table of tables) {
-      for (const [period, starts] of [
-        ['lunch', ['12:00', '12:30', '13:00', '13:30', '14:00']],
-        ['dinner', ['17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30']],
-      ] as const) {
-        // Dinner runs fuller than lunch, and the courtyard fills first.
-        const weight =
-          density *
-          (period === 'dinner' ? 1 : 0.55) *
-          (table.zone === 'courtyard' ? 1.25 : table.zone === 'dining' ? 1 : 0.75)
-
-        const taken: Array<[number, number]> = []
-        for (const hhmm of starts) {
-          if (rand() > weight * 0.55) continue
-          const start = at(key, hhmm)
-          const partySize = Math.max(
-            1,
-            Math.min(table.seats, table.seats - Math.floor(rand() * 2)),
-          )
-          const span: [number, number] = [
-            start.getTime(),
-            start.getTime() + occupancyMinutes(partySize) * 60_000,
-          ]
-          if (taken.some(([s, e]) => span[0] < e && s < span[1])) continue
-          taken.push(span)
-
-          const [guestName, phone, email] = SEED_NAMES[n % SEED_NAMES.length]
-          const note = SEED_NOTES[Math.floor(rand() * SEED_NOTES.length)]
-          out.push({
-            id: newReference(),
-            tableId: table.id,
-            startsAt: start.toISOString(),
-            durationMin: sittingFor(partySize), // sitting only; buffer is applied by availability
-            partySize,
-            guestName,
-            phone,
-            email,
-            notes: note || undefined,
-            status: 'confirmed',
-          })
-          n++
-        }
-      }
-    }
-  }
-  return out
+  return SEED.map(([day, tableId, time, partySize, guestName, phone, email, notes]) => ({
+    id: newReference(),
+    tableId,
+    startsAt: at(shiftDays(today, day), time).toISOString(),
+    durationMin: sittingFor(partySize), // sitting only; the buffer is applied by availability
+    partySize,
+    guestName,
+    phone,
+    email,
+    notes,
+    status: 'confirmed' as const,
+  }))
 }
 
 function load(): Booking[] {

@@ -19,6 +19,13 @@ export function toScene(x: number, y: number): [number, number] {
   return [x - room.width / 2, room.depth / 2 - y]
 }
 
+/**
+ * Quarter-turns about Y are baked into the geometry rather than applied to the
+ * mesh. `shade()` assigns face values from each triangle's normal, so a mesh
+ * carrying its own rotation would end up with its dark side pointing the wrong
+ * way in world space — and §2's whole point is that the direction is global.
+ * Turning the geometry keeps local and world normals in agreement.
+ */
 const geoCache = new Map<string, BufferGeometry>()
 
 function cached(key: string, build: () => BufferGeometry): BufferGeometry {
@@ -80,8 +87,9 @@ export function wallGeo(
   height: number,
   thickness: number,
   holes: Hole[] = [],
+  turns = 0,
 ): BufferGeometry {
-  const key = `wall:${len}:${height}:${thickness}:${JSON.stringify(holes)}`
+  const key = `wall:${len}:${height}:${thickness}:${JSON.stringify(holes)}:${turns}`
   return cached(key, () => {
     const outline = new Shape()
     outline.moveTo(0, 0)
@@ -92,6 +100,7 @@ export function wallGeo(
     outline.holes = holes.map((h) => (h.kind === 'arch' ? archPath(h) : slitPath(h)))
     const g = new ExtrudeGeometry(outline, { depth: thickness, bevelEnabled: false })
     g.translate(-len / 2, 0, -thickness / 2)
+    if (turns) g.rotateY((turns * Math.PI) / 2)
     return g
   })
 }
@@ -104,8 +113,10 @@ export function parapetGeo(
   thickness: number,
   period = 0.62,
   merlonWidth = 0.34,
+  turns = 0,
 ): BufferGeometry {
-  return cached(`parapet:${len}:${base}:${merlon}:${thickness}:${period}:${merlonWidth}`, () => {
+  const key = `parapet:${len}:${base}:${merlon}:${thickness}:${period}:${merlonWidth}:${turns}`
+  return cached(key, () => {
     const top: Array<[number, number]> = []
     const hTop = base + merlon
     for (let x = 0; x + period <= len + 1e-6; x += period) {
@@ -121,6 +132,7 @@ export function parapetGeo(
 
     const g = new ExtrudeGeometry(s, { depth: thickness, bevelEnabled: false })
     g.translate(-len / 2, 0, -thickness / 2)
+    if (turns) g.rotateY((turns * Math.PI) / 2)
     return g
   })
 }

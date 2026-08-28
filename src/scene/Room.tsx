@@ -37,16 +37,23 @@ export default function Room({ quarter }: { quarter: number }) {
   const sideLen = COURTYARD_Y
   const sideWall = useMemo(
     () =>
-      wallGeo(sideLen, H, T, [
-        { kind: 'slit', x: sideLen * 0.34, y: 1.35, width: 0.16 },
-        { kind: 'slit', x: sideLen * 0.5, y: 1.35, width: 0.16 },
-        { kind: 'slit', x: sideLen * 0.66, y: 1.35, width: 0.16 },
-      ]),
+      wallGeo(
+        sideLen,
+        H,
+        T,
+        [
+          { kind: 'slit', x: sideLen * 0.34, y: 1.35, width: 0.16 },
+          { kind: 'slit', x: sideLen * 0.5, y: 1.35, width: 0.16 },
+          { kind: 'slit', x: sideLen * 0.66, y: 1.35, width: 0.16 },
+        ],
+        1,
+      ),
     [sideLen],
   )
-  const barWall = useMemo(() => wallGeo(sideLen, H, T, []), [sideLen])
+  const barWall = useMemo(() => wallGeo(sideLen, H, T, [], 1), [sideLen])
   const sideParapet = useMemo(
-    () => parapetGeo(room.depth - COURTYARD_Y, PARAPET_BASE, PARAPET_MERLON, T),
+    () =>
+      parapetGeo(room.depth - COURTYARD_Y, PARAPET_BASE, PARAPET_MERLON, T, 0.62, 0.34, 1),
     [],
   )
 
@@ -68,11 +75,17 @@ export default function Room({ quarter }: { quarter: number }) {
   const barRail = useMemo(() => boxGeo(0.1, 0.035, bar.d - 0.24), [bar.d])
   const gantry = useMemo(
     () =>
-      wallGeo(bar.d + 0.5, 2.1, 0.14, [
-        { kind: 'slit', x: (bar.d + 0.5) * 0.3, y: 0.9, width: 0.13 },
-        { kind: 'slit', x: (bar.d + 0.5) * 0.5, y: 0.9, width: 0.13 },
-        { kind: 'slit', x: (bar.d + 0.5) * 0.7, y: 0.9, width: 0.13 },
-      ]),
+      wallGeo(
+        bar.d + 0.5,
+        2.1,
+        0.14,
+        [
+          { kind: 'slit', x: (bar.d + 0.5) * 0.3, y: 0.9, width: 0.13 },
+          { kind: 'slit', x: (bar.d + 0.5) * 0.5, y: 0.9, width: 0.13 },
+          { kind: 'slit', x: (bar.d + 0.5) * 0.7, y: 0.9, width: 0.13 },
+        ],
+        1,
+      ),
     [bar.d],
   )
 
@@ -138,7 +151,6 @@ export default function Room({ quarter }: { quarter: number }) {
         toneKey="stone"
         tone={stone}
         position={[-halfX - T / 2, 0, courtyardZ + sideLen / 2]}
-        rotation={[0, Math.PI / 2, 0]}
         visible={showLeft}
       />
       <Solid
@@ -146,7 +158,6 @@ export default function Room({ quarter }: { quarter: number }) {
         toneKey="stone"
         tone={stone}
         position={[halfX + T / 2, 0, courtyardZ + sideLen / 2]}
-        rotation={[0, Math.PI / 2, 0]}
         visible={showRight}
       />
       <Solid
@@ -163,14 +174,12 @@ export default function Room({ quarter }: { quarter: number }) {
         toneKey="stone"
         tone={stone}
         position={[-halfX - T / 2, TERRACE_H, courtyardZ - courtyardDepth / 2]}
-        rotation={[0, Math.PI / 2, 0]}
       />
       <Solid
         geometry={sideParapet}
         toneKey="stone"
         tone={stone}
         position={[halfX + T / 2, TERRACE_H, courtyardZ - courtyardDepth / 2]}
-        rotation={[0, Math.PI / 2, 0]}
       />
       <Solid
         geometry={backParapet}
@@ -194,7 +203,6 @@ export default function Room({ quarter }: { quarter: number }) {
         toneKey="stone"
         tone={stone}
         position={[-halfX + 0.07, 0, barZ]}
-        rotation={[0, Math.PI / 2, 0]}
         visible={showLeft}
       />
     </group>

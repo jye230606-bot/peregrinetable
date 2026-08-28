@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "check:data": "esbuild scripts/check-data.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp-check.mjs --log-level=error && node node_modules/.tmp-check.mjs"
+    "check:data": "esbuild scripts/check-data.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp-check.mjs --log-level=error && node node_modules/.tmp-check.mjs",
+    "check:guest": "esbuild scripts/check-guest.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp-guest.mjs --log-level=error && node node_modules/.tmp-guest.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
