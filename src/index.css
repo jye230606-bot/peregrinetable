@@ -1,7 +1,13 @@
-@import 'tailwindcss';
-
 /* ------------------------------------------------------------------
    The Peacock — design tokens.
+
+   Tailwind is installed but deliberately not imported. Its base layer
+   ships `.rounded{border-radius:.25rem}`, `.backdrop-filter` and
+   box-shadow rules, all banned by the art direction §0 — and acceptance
+   check 7 fails on a box-shadow anywhere in the CSS. Nothing here uses a
+   Tailwind utility; the type scale, panels and buttons in §8 are all
+   hand-written below. Re-add the import and the vite plugin if that
+   ever changes.
    Palette and rules from .claude/rules/art-direction.md.
    No box-shadow, no backdrop-filter, no gradients on panels or
    buttons, no radius above 3px. Anywhere.
@@ -209,4 +215,69 @@ body {
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--mv-stone-dark) transparent;
+}
+
+/* --- Scene ---------------------------------------------------------- */
+
+.scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  /* The sky gradient of Reference 5. Lives behind the canvas, never on geometry. */
+  background: linear-gradient(180deg, var(--mv-sky-top) 0%, var(--mv-sky-bottom) 100%);
+  overflow: hidden;
+}
+
+.scene canvas {
+  display: block;
+  touch-action: none;
+}
+
+.scene__controls {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  gap: 8px;
+}
+
+.scene__turn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--mv-stone-top);
+  border-color: var(--mv-hairline);
+  color: var(--mv-ink);
+}
+
+/* --- App shell ------------------------------------------------------- */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--mv-sky-bottom);
+}
+
+.app__bar {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 16px 24px;
+  background: var(--mv-stone-top);
+  border-bottom: 1px solid var(--mv-hairline);
+  flex: 0 0 auto;
+}
+
+.app__body {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+}
+
+.app__body > .scene {
+  flex: 1 1 auto;
 }

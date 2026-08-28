@@ -1,0 +1,268 @@
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { OrthographicCamera } from '@react-three/drei'
+import { Fog, Group, OrthographicCamera as Ortho } from 'three'
+import type { Table, TableState } from '../data'
+import Case from './Case'
+import Room from './Room'
+import Shadows from './Shadows'
+import TableMesh from './TableMesh'
+import { applyQuarterToAll } from './geometry'
+import { ROTATE_MS, standardEase } from './ease'
+import {
+  CASE_HEIGHT,
+  CASE_SECTION,
+  CASE_THICK,
+  FOG_FAR,
+  FOG_NEAR,
+  PLATFORM_THICK,
+  ZOOM_MAX,
+  ZOOM_MIN,
+  caseD,
+  caseW,
+} from './layout'
+import { hex } from './palette'
+
+const SQRT2 = Math.SQRT2
+const SQRT6 = Math.sqrt(6)
+
+/**
+ * True isometric projection worked out by hand: a camera at equal XYZ gives
+ * 35.264° elevation at 45° azimuth, and these two formulas are where a world
+ * point lands on screen under it. Used to frame the room, never to draw.
+ */
+function project(x: number, y: number, z: number) {
+  return { sx: (x - z) / SQRT2, su: (2 * y - x - z) / SQRT6 }
+}
+
+/**
+ * Zoom that frames the whole case with generous margins, and the target height
+ * that centres it. Computed across both footprint orientations so the framing
+ * never jumps as the room turns.
+ */
+function fit(width: number, height: number) {
+  const yLo = -(PLATFORM_THICK + CASE_THICK)
+  const yHi = CASE_HEIGHT - PLATFORM_THICK + CASE_SECTION
+  let minSx = Infinity
+  let maxSx = -Infinity
+  let minSu = Infinity
+  let maxSu = -Infinity
+
+  for (const [ex, ez] of [
+    [caseW / 2, caseD / 2],
+    [caseD / 2, caseW / 2],
+  ]) {
+    for (const x of [-ex, ex]) {
+      for (const z of [-ez, ez]) {
+        for (const y of [yLo, yHi]) {
+          const { sx, su } = project(x, y, z)
+          minSx = Math.min(minSx, sx)
+          maxSx = Math.max(maxSx, sx)
+          minSu = Math.min(minSu, su)
+          maxSu = Math.max(maxSu, su)
+        }
+      }
+    }
+  }
+
+  const spanX = maxSx - minSx
+  const spanU = maxSu - minSu
+  // Reference 2 is the composition brief: the object takes a small fraction of
+  // the frame and the empty space does the work.
+  const base = Math.min(width / spanX, height / spanU) * 0.92
+  return { base, targetY: (((maxSu + minSu) / 2) * SQRT6) / 2 }
+}
+
+/**
+ * OrthographicCamera at equal XYZ. The ratio is never altered — only zoom, and
+ * only within 0.6×–1.8× of the fitted base (§1).
+ */
+function IsoCamera({ zoomMul }: { zoomMul: number }) {
+  const size = useThree((s) => s.size)
+  const cam = useRef<Ortho>(null)
+  const { base, targetY } = useMemo(() => fit(size.width, size.height), [size.width, size.height])
+
+  useLayoutEffect(() => {
+    const c = cam.current
+    if (!c) return
+    c.zoom = base * zoomMul
+    c.position.set(20, targetY + 20, 20)
+    c.lookAt(0, targetY, 0)
+    c.updateProjectionMatrix()
+  }, [base, targetY, zoomMul])
+
+  return <OrthographicCamera ref={cam} makeDefault position={[20, 20, 20]} near={-100} far={200} />
+}
+
+/** 90°-snapped rotation with easing. Never a free orbit, never any tilt (§1). */
+function Turntable({
+  quarter,
+  onShadeQuarter,
+  reduced,
+  children,
+}: {
+  quarter: number
+  onShadeQuarter: (q: number) => void
+  reduced: boolean
+  children: ReactNode
+}) {
+  const group = useRef<Group>(null)
+  const anim = useRef({ from: 0, to: 0, start: -1 })
+  const shade = useRef(-1)
+
+  useEffect(() => {
+    const g = group.current
+    if (!g) return
+    const to = (-quarter * Math.PI) / 2
+    if (reduced) {
+      g.rotation.y = to
+      anim.current = { from: to, to, start: -1 }
+      return
+    }
+    anim.current = { from: g.rotation.y, to, start: performance.now() }
+  }, [quarter, reduced])
+
+  useFrame(() => {
+    const g = group.current
+    if (!g) return
+    const a = anim.current
+    if (a.start >= 0) {
+      const t = Math.min(1, (performance.now() - a.start) / ROTATE_MS)
+      g.rotation.y = a.from + (a.to - a.from) * standardEase(t)
+      if (t >= 1) a.start = -1
+    }
+    // The dark side is fixed on screen, so the face grouping flips as the room
+    // passes each 45° mark — the least visible moment in the turn.
+    const q = ((Math.round(g.rotation.y / (Math.PI / 2)) % 4) + 4) % 4
+    if (q !== shade.current) {
+      shade.current = q
+      applyQuarterToAll(q)
+      onShadeQuarter(q)
+    }
+  })
+
+  return <group ref={group}>{children}</group>
+}
+
+/**
+ * R3F sizes its canvas from `react-use-measure`, which drops its first
+ * ResizeObserver callback when that callback lands before the hook's own
+ * mounted-flag effect has run. On a static layout nothing ever resizes again,
+ * so the observer never fires a second time, the measured size stays 0×0, and
+ * the Canvas silently never initialises — no error, just an empty page.
+ *
+ * One resize event after mount makes it measure. If the observer already won
+ * the race the bounds are unchanged and this costs nothing.
+ */
+function useCanvasMeasureFix() {
+  useEffect(() => {
+    const id = requestAnimationFrame(() => window.dispatchEvent(new Event('resize')))
+    return () => cancelAnimationFrame(id)
+  }, [])
+}
+
+export type FloorPlanProps = {
+  tables: Table[]
+  stateOf: (table: Table) => TableState
+  selectedId?: string | null
+  onSelect?: (table: Table) => void
+  onHover?: (table: Table | null) => void
+  labelFor?: (table: Table) => ReactNode
+}
+
+export default function FloorPlan({
+  tables,
+  stateOf,
+  selectedId,
+  onSelect,
+  onHover,
+  labelFor,
+}: FloorPlanProps) {
+  const [quarter, setQuarter] = useState(0)
+  const [shadeQuarter, setShadeQuarter] = useState(0)
+  const [zoomMul, setZoomMul] = useState(1)
+  const reduced = useMemo(
+    () =>
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    [],
+  )
+
+  useEffect(() => {
+    applyQuarterToAll(0)
+  }, [])
+
+  useCanvasMeasureFix()
+
+  const onWheel = useCallback((e: React.WheelEvent) => {
+    setZoomMul((z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z * (e.deltaY > 0 ? 0.92 : 1.087))))
+  }, [])
+
+  return (
+    <div className="scene" onWheel={onWheel}>
+      <Canvas
+        flat
+        dpr={[1, 2]}
+        gl={{ antialias: true, alpha: true }}
+        onCreated={({ scene }) => {
+          // Fog dissolves the far edge of the room into the background (§6).
+          scene.fog = new Fog(hex.fog, FOG_NEAR, FOG_FAR)
+        }}
+      >
+        <IsoCamera zoomMul={zoomMul} />
+        <Turntable quarter={quarter} onShadeQuarter={setShadeQuarter} reduced={reduced}>
+          <Case quarter={shadeQuarter} />
+          <Room quarter={shadeQuarter} />
+          <Shadows tables={tables} quarter={shadeQuarter} />
+          {tables.map((t) => (
+            <TableMesh
+              key={t.id}
+              table={t}
+              state={stateOf(t)}
+              selected={selectedId === t.id}
+              onSelect={onSelect}
+              onHover={onHover}
+              label={labelFor?.(t)}
+            />
+          ))}
+        </Turntable>
+      </Canvas>
+
+      <div className="scene__controls">
+        <button
+          type="button"
+          className="btn btn--quiet scene__turn"
+          onClick={() => setQuarter((q) => q - 1)}
+          aria-label="Rotate the room left"
+        >
+          <Chevron dir="left" />
+        </button>
+        <button
+          type="button"
+          className="btn btn--quiet scene__turn"
+          onClick={() => setQuarter((q) => q + 1)}
+          aria-label="Rotate the room right"
+        >
+          <Chevron dir="right" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function Chevron({ dir }: { dir: 'left' | 'right' }) {
+  const d = dir === 'left' ? 'M9 3 4 8l5 5' : 'M7 3l5 5-5 5'
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d={d} fill="none" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  )
+}
