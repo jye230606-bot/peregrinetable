@@ -82,11 +82,41 @@ function fit(width: number, height: number) {
 }
 
 /**
+ * Measures the element R3F sizes its canvas to. R3F's own `size` can be a stale
+ * first measurement — the framing then sticks at whatever the layout happened to
+ * be mid-mount, which is how the deployed build ended up smaller than dev. An
+ * observer on the real element always self-corrects.
+ */
+function useContainerSize() {
+  const el = useThree((s) => s.gl.domElement)
+  const [size, setSize] = useState(() => ({
+    width: el.clientWidth || 1,
+    height: el.clientHeight || 1,
+  }))
+
+  useLayoutEffect(() => {
+    const target = el.parentElement ?? el
+    const measure = () => {
+      const { width, height } = target.getBoundingClientRect()
+      if (width > 0 && height > 0) {
+        setSize((s) => (s.width === width && s.height === height ? s : { width, height }))
+      }
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [el])
+
+  return size
+}
+
+/**
  * OrthographicCamera at equal XYZ. The ratio is never altered — only zoom, and
  * only within 0.6×–1.8× of the fitted base (§1).
  */
 function IsoCamera({ zoomMul }: { zoomMul: number }) {
-  const size = useThree((s) => s.size)
+  const size = useContainerSize()
   const cam = useRef<Ortho>(null)
   const { base, targetY } = useMemo(() => fit(size.width, size.height), [size.width, size.height])
 
