@@ -13,11 +13,13 @@ import {
   type SlotState,
   type Table,
   type TableState,
+  BookingRejected,
 } from '../data'
 import FloorPlan from '../scene/FloorPlan'
 import Gate, { type GateValue } from './Gate'
 import TablePanel from './TablePanel'
 import BookingForm, { type GuestDetails } from './BookingForm'
+import Dock, { useDockScroll } from './Dock'
 
 type Stage = 'browse' | 'details' | 'done'
 
@@ -51,6 +53,8 @@ export default function BookingFlow({
   const [confirmed, setConfirmed] = useState<Booking | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [dockOpen, setDockOpen] = useState(false)
+  const { dock, scene, revealDock, revealScene } = useDockScroll()
 
   const chosenAt = useMemo(() => (gate ? at(gate.date, gate.time) : null), [gate])
 
@@ -75,13 +79,15 @@ export default function BookingFlow({
       setSelected(table)
       setStage('browse')
       setError(null)
+      setDockOpen(true)
+      revealDock()
       // Offer the time they asked for when this table can actually take it.
       if (gate && chosenAt) {
         const free = tableStateAt(table, chosenAt, gate.partySize, bookings) === 'available'
         setPickedSlot(free ? chosenAt : null)
       }
     },
-    [gate, chosenAt, bookings],
+    [gate, chosenAt, bookings, revealDock],
   )
 
   const applyGate = (value: GateValue) => {
@@ -91,6 +97,7 @@ export default function BookingFlow({
     setPickedSlot(null)
     setStage('browse')
     setConfirmed(null)
+    setDockOpen(false)
   }
 
   const confirm = async (details: GuestDetails) => {
@@ -110,14 +117,28 @@ export default function BookingFlow({
       })
       setConfirmed(booking)
       setStage('done')
+      setDockOpen(true)
       await refresh(gate.date)
       onComplete?.(booking)
-    } catch {
-      setError('That did not save. Try again.')
+    } catch (e) {
+      // The adapter rejects with the reason; a guest deserves to see it rather
+      // than a shrug — most often the table was taken while they were typing.
+      setError(e instanceof BookingRejected ? e.message : 'That did not save. Try again.')
+      await refresh(gate.date)
     } finally {
       setBusy(false)
     }
   }
+
+  // What the collapsed phone bar says. Never rendered on a computer.
+  const dockSummary =
+    stage === 'done'
+      ? 'Booking confirmed'
+      : stage === 'details' && selected
+        ? `${selected.label} — your details`
+        : selected
+          ? `${selected.label} · ${zoneName(selected.zone)} · seats ${selected.seats}`
+          : 'Pick a table'
 
   const startAgain = () => {
     setConfirmed(null)
@@ -125,6 +146,7 @@ export default function BookingFlow({
     setPickedSlot(null)
     setStage('browse')
     setGateOpen(true)
+    setDockOpen(false)
   }
 
   return (
@@ -159,7 +181,7 @@ export default function BookingFlow({
         </main>
       ) : (
         <main className="app__body">
-          <div className="guest__scene">
+          <div className="guest__scene" ref={scene}>
             <FloorPlan
               tables={tables}
               stateOf={stateOf}
@@ -169,7 +191,13 @@ export default function BookingFlow({
           </div>
 
           {/* The column is always here, so opening a panel never resizes the scene. */}
-          <aside className="dock">
+          <Dock
+            summary={dockSummary}
+            open={dockOpen}
+            onToggle={() => setDockOpen((v) => !v)}
+            onBackToRoom={revealScene}
+            innerRef={dock}
+          >
             {stage === 'done' && confirmed ? (
               <Confirmation booking={confirmed} onDone={startAgain} />
             ) : stage === 'details' && selected && pickedSlot ? (
@@ -208,7 +236,7 @@ export default function BookingFlow({
                 </header>
               </div>
             )}
-          </aside>
+          </Dock>
         </main>
       )}
     </>

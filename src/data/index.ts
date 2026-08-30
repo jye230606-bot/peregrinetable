@@ -35,6 +35,7 @@ function bind(a: DataAdapter) {
 
 export * from './types'
 export * from './availability'
+export * from './rules'
 export * from './time'
 export { room, zones, tables, fixtures, service, sizeOf, footprint, auditVenue } from './venue'
 export type { Zone, Fixture } from './venue'

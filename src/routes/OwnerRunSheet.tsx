@@ -11,6 +11,7 @@ import {
   type Booking,
   type BookingStatus,
   type DateKey,
+  BookingRejected,
 } from '../data'
 import BookingFlow from '../components/BookingFlow'
 import { DateBar, OwnerBar } from '../components/OwnerChrome'
@@ -32,6 +33,7 @@ export default function OwnerRunSheet() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [editing, setEditing] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  const [problem, setProblem] = useState<string | null>(null)
 
   const refresh = useCallback(async (key: DateKey) => {
     setBookings(await listBookings(key))
@@ -56,12 +58,22 @@ export default function OwnerRunSheet() {
   }, [bookings])
 
   const act = async (id: string, patch: Partial<Booking>) => {
-    await updateBooking(id, patch)
+    setProblem(null)
+    try {
+      await updateBooking(id, patch)
+    } catch (e) {
+      setProblem(e instanceof BookingRejected ? e.message : 'That change did not save.')
+    }
     await refresh(date)
   }
 
   const drop = async (id: string) => {
-    await cancelBooking(id)
+    setProblem(null)
+    try {
+      await cancelBooking(id)
+    } catch (e) {
+      setProblem(e instanceof BookingRejected ? e.message : 'That change did not save.')
+    }
     await refresh(date)
   }
 
@@ -90,6 +102,11 @@ export default function OwnerRunSheet() {
       </DateBar>
 
       <main className="app__body app__body--sheet scroll-y">
+        {problem ? (
+          <p className="t-13 sheet__problem" role="status">
+            {problem}
+          </p>
+        ) : null}
         {!services.length ? (
           <p className="t-13 ink-45 sheet__empty">Nothing booked for this day.</p>
         ) : (
@@ -153,13 +170,13 @@ function Row({
   return (
     <>
       <tr className={released ? 'sheet__row is-released' : 'sheet__row'}>
-        <td className="t-13">{timeLabel(new Date(booking.startsAt))}</td>
-        <td className="t-13">{labelOf(booking.tableId)}</td>
-        <td className="t-13">{booking.partySize}</td>
-        <td className="t-13">{booking.guestName}</td>
-        <td className="t-13">{booking.phone}</td>
-        <td className="t-13">{STATUS_LABEL[booking.status]}</td>
-        <td className="t-13 sheet__notes">{booking.notes ?? ''}</td>
+        <td className="t-13" data-label="Time">{timeLabel(new Date(booking.startsAt))}</td>
+        <td className="t-13" data-label="Table">{labelOf(booking.tableId)}</td>
+        <td className="t-13" data-label="Party">{booking.partySize}</td>
+        <td className="t-13" data-label="Name">{booking.guestName}</td>
+        <td className="t-13" data-label="Phone">{booking.phone}</td>
+        <td className="t-13" data-label="Status">{STATUS_LABEL[booking.status]}</td>
+        <td className="t-13 sheet__notes" data-label="Notes">{booking.notes ?? ''}</td>
         <td className="sheet__actions">
           <button
             type="button"

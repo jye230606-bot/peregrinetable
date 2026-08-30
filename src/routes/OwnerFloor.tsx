@@ -16,6 +16,7 @@ import {
 } from '../data'
 import FloorPlan from '../scene/FloorPlan'
 import { DateBar, OwnerBar } from '../components/OwnerChrome'
+import Dock, { useDockScroll } from '../components/Dock'
 
 const zoneName = (id: string) => zones.find((z) => z.id === id)?.name ?? id
 
@@ -28,6 +29,8 @@ export default function OwnerFloor() {
   const [date, setDate] = useState<DateKey>(todayKey())
   const [bookings, setBookings] = useState<Booking[]>([])
   const [selected, setSelected] = useState<Table | null>(null)
+  const [dockOpen, setDockOpen] = useState(false)
+  const { dock, scene, revealDock, revealScene } = useDockScroll()
 
   const refresh = useCallback(async (key: DateKey) => {
     setBookings(await listBookings(key))
@@ -56,6 +59,15 @@ export default function OwnerFloor() {
     [bookings],
   )
 
+  const pickTable = useCallback(
+    (table: Table) => {
+      setSelected(table)
+      setDockOpen(true)
+      revealDock()
+    },
+    [revealDock],
+  )
+
   const day = useMemo(
     () => (selected ? bookingsFor(selected.id, bookings) : []),
     [selected, bookings],
@@ -67,17 +79,23 @@ export default function OwnerFloor() {
       <DateBar date={date} onChange={setDate} />
 
       <main className="app__body">
-        <div className="guest__scene">
+        <div className="guest__scene" ref={scene}>
           <FloorPlan
             tables={tables}
             stateOf={stateOf}
             selectedId={selected?.id ?? null}
-            onSelect={setSelected}
+            onSelect={pickTable}
             labelFor={labelFor}
           />
         </div>
 
-        <aside className="dock">
+        <Dock
+          summary={selected ? `${selected.label} · ${zoneName(selected.zone)}` : 'The room'}
+          open={dockOpen}
+          onToggle={() => setDockOpen((v) => !v)}
+          onBackToRoom={revealScene}
+          innerRef={dock}
+        >
           {selected ? (
             <div className="dock__body enter">
               <header className="dock__head">
@@ -125,7 +143,7 @@ export default function OwnerFloor() {
               </header>
             </div>
           )}
-        </aside>
+        </Dock>
       </main>
     </div>
   )

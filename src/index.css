@@ -1,4 +1,33 @@
 /* ------------------------------------------------------------------
+   Fonts are served from this origin, not Google's. A CDN request would
+   disclose every visitor's IP address and user agent to a third party
+   on each visit, and the CSP in vercel.json admits no third-party
+   origins. Both files are the latin variable subsets.
+   ------------------------------------------------------------------ */
+
+@font-face {
+  font-family: 'Jost';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/jost-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Karla';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('/fonts/karla-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ------------------------------------------------------------------
    The Peacock — design tokens.
 
    Tailwind is installed but deliberately not imported. Its base layer
@@ -58,6 +87,16 @@ html,
 body,
 #root {
   height: 100%;
+}
+
+/* Dynamic viewport units so mobile browser chrome can't crop the room.
+   Identical to 100% on a computer. */
+@supports (height: 100dvh) {
+  html,
+  body,
+  #root {
+    height: 100dvh;
+  }
 }
 
 body {
@@ -230,7 +269,9 @@ body {
 
 .scene canvas {
   display: block;
-  touch-action: none;
+  /* pan-y, not none: on a phone the page scrolls past the map, and a finger
+     that lands on the room must still be able to scroll it. */
+  touch-action: pan-y;
 }
 
 .scene__controls {
@@ -370,6 +411,13 @@ body {
 
 .summary__change {
   margin-left: auto;
+}
+
+/* The disclosure header and the back link exist only under the phone
+   breakpoint, where the dock sits above the map. */
+.dock__toggle,
+.dock__back {
+  display: none;
 }
 
 /* Docked column. Always present, so the scene never resizes. */
@@ -640,3 +688,329 @@ textarea.field {
 .day-row:last-child { border-bottom: 0; }
 .day-row.is-released { color: color-mix(in srgb, var(--mv-ink) 45%, transparent); }
 .day-row__time { font-family: Jost, sans-serif; letter-spacing: 0.08em; }
+
+/* ====================================================================== */
+/*  Phone                                                                  */
+/*                                                                         */
+/*  Everything below this line is scoped to one breakpoint. Nothing above  */
+/*  it changes, which is what keeps the computer build exactly as it was.  */
+/*  The layout inverts: details on top, map underneath at a fixed height,  */
+/*  and the selection menu drops down and pushes the map further down the  */
+/*  page rather than covering it — so §8's "panels never overlay the       */
+/*  scene" and "the scene never resizes" both still hold.                  */
+/* ====================================================================== */
+
+@media (max-width: 767px) {
+  /* The page scrolls now, so the shell stops being a fixed-height frame. */
+  html,
+  body,
+  #root {
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .app {
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .app__bar {
+    padding: 12px 16px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .app__body {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* Details above, map below. */
+  .dock {
+    order: 0;
+    flex: 0 0 auto;
+    border-left: 0;
+    border-bottom: 1px solid var(--mv-hairline);
+    overflow: visible;
+  }
+
+  .guest__scene {
+    order: 1;
+    /* Fixed, so dropping the menu down never resizes the room. */
+    flex: 0 0 52dvh;
+    min-height: 260px;
+  }
+
+  /* --- the disclosure ------------------------------------------------ */
+
+  .dock__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 16px;
+    background: var(--mv-stone-top);
+    border: 0;
+    color: var(--mv-ink);
+    font-family: Karla, sans-serif;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .dock__toggle-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dock__caret {
+    flex: 0 0 auto;
+    transition: transform 320ms var(--mv-ease);
+  }
+
+  .dock.is-open .dock__caret {
+    transform: rotate(180deg);
+  }
+
+  .dock:not(.is-open) .dock__body {
+    display: none;
+  }
+
+  .dock:not(.is-open) .dock__back {
+    display: none;
+  }
+
+  .dock__body {
+    padding: 16px;
+    border-top: 1px solid var(--mv-hairline);
+  }
+
+  /* Panels slide down rather than in from the side. */
+  @keyframes mv-enter-down {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .dock .enter {
+    animation: mv-enter-down 320ms var(--mv-ease) both;
+  }
+
+  .dock__back {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 16px;
+    background: none;
+    border: 0;
+    border-top: 1px solid var(--mv-hairline);
+    color: color-mix(in srgb, var(--mv-ink) 60%, transparent);
+    font-family: Jost, sans-serif;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 11px;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  /* --- tap targets ---------------------------------------------------- */
+
+  .btn {
+    min-height: 44px;
+  }
+
+  .btn--sm {
+    min-height: 40px;
+    padding: 8px 12px;
+  }
+
+  .scene__turn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .scene__controls {
+    right: 12px;
+    bottom: 12px;
+  }
+
+  /* --- gate ------------------------------------------------------------ */
+
+  .gate-wrap {
+    padding: 16px;
+    align-items: flex-start;
+  }
+
+  .gate {
+    padding: 16px;
+  }
+
+  .gate .grid-4 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* --- summary bars ---------------------------------------------------- */
+
+  .summary {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px;
+  }
+
+  .summary__change {
+    margin-left: 0;
+  }
+
+  .summary-row {
+    flex-wrap: wrap;
+  }
+
+  .summary-row__exit {
+    margin: 0 16px 12px;
+  }
+
+  /* --- owner chrome ---------------------------------------------------- */
+
+  .app__bar--owner {
+    gap: 12px;
+  }
+
+  .owner-bar__out {
+    margin-left: auto;
+  }
+
+  .datebar {
+    flex-wrap: wrap;
+    padding: 12px 16px;
+  }
+
+  .datebar__label {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .datebar__date {
+    width: 100%;
+  }
+
+  .datebar__spacer {
+    display: none;
+  }
+
+  /* --- run sheet becomes cards ----------------------------------------- */
+
+  .app__body--sheet {
+    padding: 16px;
+  }
+
+  .sheet,
+  .sheet tbody,
+  .sheet tr,
+  .sheet td {
+    display: block;
+    width: 100%;
+  }
+
+  .sheet thead {
+    display: none;
+  }
+
+  .sheet {
+    border: 0;
+    background: none;
+  }
+
+  .sheet__row {
+    background: var(--mv-stone-top);
+    border: 1px solid var(--mv-hairline);
+    border-radius: var(--mv-radius);
+    margin-bottom: 8px;
+    padding: 4px 0;
+  }
+
+  .sheet td {
+    border-bottom: 0;
+    padding: 6px 16px;
+    display: flex;
+    gap: 16px;
+    align-items: baseline;
+  }
+
+  /* The column heading travels with the cell instead of sitting in a row. */
+  .sheet td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 72px;
+    font-family: Jost, sans-serif;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 11px;
+    color: color-mix(in srgb, var(--mv-ink) 45%, transparent);
+  }
+
+  /* An empty notes cell would otherwise leave a stray label behind. */
+  .sheet td.sheet__notes:empty {
+    display: none;
+  }
+
+  .sheet__notes {
+    max-width: none;
+  }
+
+  .sheet__actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 12px 16px 8px;
+    border-top: 1px solid var(--mv-hairline);
+    margin-top: 4px;
+  }
+
+  .sheet__edit-row {
+    display: block;
+  }
+
+  .sheet__edit-row td {
+    display: block;
+    padding: 12px;
+  }
+
+  .edit {
+    gap: 12px;
+  }
+
+  .edit__field,
+  .edit__field--narrow,
+  .edit__field--wide {
+    flex: 1 1 100%;
+  }
+
+  .edit__actions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .edit__actions .btn {
+    flex: 1 1 auto;
+  }
+
+  /* --- table pins ------------------------------------------------------ */
+
+  /* Party counts crowd at this width; the time is the part that matters. */
+  .pin__party {
+    display: none;
+  }
+}
+
+.sheet__problem {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  background: var(--mv-stone-top);
+  border: 1px solid var(--mv-hairline);
+  border-left: 3px solid var(--mv-coral-dark);
+  border-radius: var(--mv-radius);
+  color: var(--mv-coral-dark);
+}

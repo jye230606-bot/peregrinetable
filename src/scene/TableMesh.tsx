@@ -83,7 +83,10 @@ export default function TableMesh({ table, state, selected, onSelect, onHover, l
     }
   })
 
-  const enter = () => {
+  // A tap fires pointerover with no matching pointerout, which would leave the
+  // table stuck in its lifted state on a phone. Only a real pointer hovers.
+  const enter = (pointerType: string) => {
+    if (pointerType !== 'mouse' && pointerType !== 'pen') return
     setHovered(true)
     onHover?.(table)
     document.body.style.cursor = 'pointer'
@@ -102,7 +105,7 @@ export default function TableMesh({ table, state, selected, onSelect, onHover, l
         position={[0, PLINTH_HEIGHT / 2, 0]}
         onPointerOver={(e) => {
           e.stopPropagation()
-          enter()
+          enter(e.pointerType)
         }}
         onPointerOut={leave}
         onClick={(e) => {
@@ -116,7 +119,7 @@ export default function TableMesh({ table, state, selected, onSelect, onHover, l
         position={[0, PLINTH_HEIGHT + bodyH / 2, 0]}
         onPointerOver={(e) => {
           e.stopPropagation()
-          enter()
+          enter(e.pointerType)
         }}
         onPointerOut={leave}
         onClick={(e) => {

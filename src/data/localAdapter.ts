@@ -1,6 +1,7 @@
 import type { Booking, DataAdapter, DateKey, NewBooking, Session, Table } from './types'
 import { tables } from './venue'
 import { at, dateKey, shiftDays, sittingFor, todayKey } from './time'
+import { BookingRejected, checkBooking, sanitise } from './rules'
 
 /**
  * localStorage-backed adapter. Zero backend: everything lives in the browser,
@@ -12,6 +13,9 @@ import { at, dateKey, shiftDays, sittingFor, todayKey } from './time'
 const KEY_BOOKINGS = 'peacock.bookings.v2'
 const KEY_SESSION = 'peacock.session.v1'
 const KEY_SEEDED = 'peacock.seeded.v2'
+
+/** A console left open on the pass shouldn't stay signed in overnight. */
+const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000
 
 /**
  * Placeholder owner auth. Deliberately trivial — a real one replaces it whole,
@@ -129,7 +133,10 @@ export const localAdapter: DataAdapter = {
 
   async createBooking(input: NewBooking): Promise<Booking> {
     const all = load()
-    const booking: Booking = { ...input, id: newReference(), status: input.status ?? 'confirmed' }
+    const clean = sanitise(input)
+    const violation = checkBooking(clean, all)
+    if (violation) throw new BookingRejected(violation)
+    const booking: Booking = { ...clean, id: newReference(), status: clean.status ?? 'confirmed' }
     all.push(booking)
     write(KEY_BOOKINGS, all)
     return booking
@@ -139,7 +146,13 @@ export const localAdapter: DataAdapter = {
     const all = load()
     const i = all.findIndex((b) => b.id === id)
     if (i === -1) throw new Error(`No booking ${id}`)
-    const next = { ...all[i], ...patch, id: all[i].id }
+    const next = { ...all[i], ...sanitise(patch), id: all[i].id }
+    // An edit has to satisfy the same rules as a new booking — moving a party
+    // onto an occupied slot or a table too small for it is still a bad diary.
+    if (next.status === 'confirmed' || next.status === 'seated') {
+      const violation = checkBooking(next, all, id)
+      if (violation) throw new BookingRejected(violation)
+    }
     all[i] = next
     write(KEY_BOOKINGS, all)
     return next
@@ -167,6 +180,14 @@ export const localAdapter: DataAdapter = {
 
   currentUser(): Session | null {
     if (!session) session = read<Session | null>(KEY_SESSION, null)
+    if (session && Date.now() - new Date(session.since).getTime() > SESSION_MAX_AGE_MS) {
+      session = null
+      try {
+        localStorage.removeItem(KEY_SESSION)
+      } catch {
+        /* ignore */
+      }
+    }
     return session
   },
 }

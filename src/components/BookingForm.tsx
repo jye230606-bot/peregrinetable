@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { dateLabel, timeLabel, zones, type Table } from '../data'
+import { LIMITS, dateLabel, timeLabel, zones, type Table } from '../data'
 import type { GateValue } from './Gate'
 
 export type GuestDetails = {
@@ -67,6 +67,7 @@ export default function BookingForm({
           className="field"
           value={details.guestName}
           onChange={(e) => set('guestName')(e.target.value)}
+          maxLength={LIMITS.guestName}
           autoComplete="name"
           required
         />
@@ -79,6 +80,7 @@ export default function BookingForm({
           type="tel"
           value={details.phone}
           onChange={(e) => set('phone')(e.target.value)}
+          maxLength={LIMITS.phone}
           autoComplete="tel"
           required
         />
@@ -91,6 +93,7 @@ export default function BookingForm({
           type="email"
           value={details.email}
           onChange={(e) => set('email')(e.target.value)}
+          maxLength={LIMITS.email}
           autoComplete="email"
           required
         />
@@ -101,6 +104,7 @@ export default function BookingForm({
         <textarea
           className="field"
           rows={3}
+          maxLength={LIMITS.notes}
           value={details.notes}
           onChange={(e) => set('notes')(e.target.value)}
         />
