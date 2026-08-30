@@ -9,8 +9,12 @@
 *.suo
 *.sw?
 .claude/worktrees
+.data
 .DS_Store
+.env
+.env.local
 .idea
+.vercel
 .vercel
 .vscode/*
 dist
@@ -22,5 +26,3 @@ npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-.vercel

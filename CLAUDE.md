@@ -41,3 +41,47 @@ the known blockers rather than a vague "make it responsive":
 
 Re-run the §11 checks at phone width when that lands: `window.__auditScene()`
 in dev, plus `npm run check:data`, `check:guest`, `check:tones`.
+
+## Running the server API
+
+The browser-only adapter is still the default, so `npm run dev` behaves exactly
+as before. The API is opt-in:
+
+```bash
+# 1. a password hash for the owner (read from stdin, never from argv —
+#    npm on Windows mangles `--` arguments when a script chains commands)
+echo -n 'your password' | npm run hash-password
+
+# 2. the API
+PEACOCK_OWNER_PASSWORD_HASH='scrypt$...' \
+PEACOCK_OWNER_USERNAME=owner \
+PEACOCK_SESSION_SECRET="$(openssl rand -base64 32)" \
+npm run dev:api
+
+# 3. the app, pointed at it
+VITE_USE_API=true npm run dev
+```
+
+In production `PEACOCK_SESSION_SECRET` is required and the server refuses to
+start without it. `KV_REST_API_URL` / `KV_REST_API_TOKEN` switch the store from
+the dev JSON file to Vercel KV; the file store is for local work only, since a
+serverless filesystem is ephemeral and per-instance.
+
+What the server enforces, and the browser therefore cannot be trusted with:
+
+- the owner password exists only as a scrypt hash in the environment
+- the session is an HMAC-signed HttpOnly cookie, so script can neither read
+  nor forge it
+- guests reading availability get bookings with the contact details stripped
+- every write is re-checked against `src/data/rules.ts`
+- sign-in attempts are throttled per instance
+
+Both adapters and the API share `src/data/rules.ts`, so a booking rule is
+written once and cannot drift between them.
+
+## Not done yet — the deployment
+
+`VITE_USE_API` is unset in the deployed demo, which therefore still runs the
+localStorage placeholder BUILD.md asked for: the owner credentials are readable
+in the bundle and guest details sit unencrypted in the browser. That build is
+for showing the room, not for holding real bookings.

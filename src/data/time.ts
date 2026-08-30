@@ -1,4 +1,4 @@
-import { service } from './venue'
+import { VENUE_TZ, service } from './venue'
 import type { DateKey } from './types'
 
 /** Venue-local time helpers. Everything the app shows is venue-local. */
@@ -7,6 +7,23 @@ const pad = (n: number) => String(n).padStart(2, '0')
 
 export function dateKey(d: Date): DateKey {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+const venueDay = new Intl.DateTimeFormat('en-CA', {
+  timeZone: VENUE_TZ,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+
+/**
+ * Which of the venue's days an instant falls on, regardless of where the code
+ * is running. The browser's own clock is usually the same thing for a guest
+ * standing in Melbourne; a server in UTC is not, which is why anything that
+ * files or filters by date has to use this rather than `dateKey`.
+ */
+export function venueDateKey(d: Date): DateKey {
+  return venueDay.format(d)
 }
 
 export function todayKey(): DateKey {

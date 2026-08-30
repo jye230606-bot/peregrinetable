@@ -11,6 +11,13 @@ import type { Table } from './types'
  * `auditVenue()` at the bottom of this file is the check.
  */
 
+/**
+ * The venue's own timezone. A booking belongs to the day it falls on *here*,
+ * not wherever a server happens to be running — on Vercel that is UTC, which
+ * would file a 9am Melbourne sitting under the previous day.
+ */
+export const VENUE_TZ = 'Australia/Melbourne'
+
 export const room = {
   width: 11.0, // x
   depth: 15.5, // y
