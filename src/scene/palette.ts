@@ -38,12 +38,22 @@ export const drained: Tone = { top: c('#D9CABA'), mid: c('#CDBCAA'), dark: c('#B
 export const stone: Tone = { top: c('#F6EFE4'), mid: c('#E6DCCC'), dark: c('#D2C6B4') }
 export const sky: Tone = { top: c('#CFE8DC'), mid: c('#BFE0D2'), dark: c('#ADD5C5') }
 
-function lerpTone(a: Tone, b: Tone, t: number): Tone {
-  return {
-    top: a.top.clone().lerp(b.top, t),
-    mid: a.mid.clone().lerp(b.mid, t),
-    dark: a.dark.clone().lerp(b.dark, t),
+/**
+ * Drop a tone's saturation to a fraction of itself and carry its lightness part
+ * of the way toward another tone. §4 asks for "coral at 55% saturation, sitting
+ * between coral and drained" — which is a saturation instruction, not a blend,
+ * and lerping the two tones together leaves it far too saturated to recede.
+ */
+function desaturateToward(from: Tone, toward: Tone, keepSaturation: number, lightness: number): Tone {
+  const a = { h: 0, s: 0, l: 0 }
+  const b = { h: 0, s: 0, l: 0 }
+  const out = {} as Tone
+  for (const key of ['top', 'mid', 'dark'] as const) {
+    from[key].getHSL(a)
+    toward[key].getHSL(b)
+    out[key] = new Color().setHSL(a.h, a.s * keepSaturation, a.l + (b.l - a.l) * lightness)
   }
+  return out
 }
 
 /** Pull the three values toward their mean lightness — flattens a solid out. */
@@ -63,8 +73,8 @@ function compress(tone: Tone, keep: number): Tone {
   return out
 }
 
-/** Coral at ~55% saturation — sits between coral and drained (§4). */
-export const partly: Tone = lerpTone(coral, drained, 0.45)
+/** Coral at 55% saturation, sitting between coral and drained (§4). */
+export const partly: Tone = desaturateToward(coral, drained, 0.55, 0.45)
 
 /** Fully booked: drained, with the face contrast halved so it lies flat. */
 export const booked: Tone = compress(drained, 0.5)

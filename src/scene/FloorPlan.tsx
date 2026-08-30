@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type RefObject,
 } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrthographicCamera } from '@react-three/drei'
@@ -186,18 +187,55 @@ function Turntable({
 /**
  * R3F sizes its canvas from `react-use-measure`, which drops its first
  * ResizeObserver callback when that callback lands before the hook's own
- * mounted-flag effect has run. On a static layout nothing ever resizes again,
- * so the observer never fires a second time, the measured size stays 0×0, and
- * the Canvas silently never initialises — no error, just an empty page.
+ * mounted-flag effect has run — and under concurrent rendering it often does.
+ * On a static layout nothing ever resizes again, so the observer never fires a
+ * second time, the measured size stays 0×0, and the Canvas silently never
+ * initialises: no error, just an empty page.
  *
- * One resize event after mount makes it measure. If the observer already won
- * the race the bounds are unchanged and this costs nothing.
+ * Watching the wrapper ourselves fixes it for good. Our own observer is
+ * guaranteed a callback after `observe()`, by which point the mounted flag is
+ * set, so dispatching a resize there always lands. We stop as soon as the
+ * canvas has a real size, and R3F leaves it at the intrinsic 300×150 until it
+ * has measured, which is the signal we watch for.
  */
-function useCanvasMeasureFix() {
+function useCanvasMeasureFix(ref: RefObject<HTMLDivElement | null>) {
   useEffect(() => {
-    const id = requestAnimationFrame(() => window.dispatchEvent(new Event('resize')))
-    return () => cancelAnimationFrame(id)
-  }, [])
+    const el = ref.current
+    if (!el) return
+
+    let timer = 0
+    let settled = false
+    const deadline = Date.now() + 2000
+
+    const nudge = () => {
+      if (settled) return true
+      const canvas = el.querySelector('canvas')
+      if (canvas && canvas.width > 300) {
+        settled = true
+        return true
+      }
+      window.dispatchEvent(new Event('resize'))
+      return false
+    }
+
+    // Passive effects run child-first, so R3F's own resize listener is already
+    // attached by the time this parent effect runs and the first nudge lands.
+    // The retries are for the cases where it is not — and they are timers, not
+    // animation frames, because a tab opened in the background never paints and
+    // would otherwise sit at 300x150 forever.
+    const tick = () => {
+      if (nudge() || Date.now() > deadline) return
+      timer = window.setTimeout(tick, 60)
+    }
+    tick()
+
+    const observer = new ResizeObserver(nudge)
+    observer.observe(el)
+    return () => {
+      window.clearTimeout(timer)
+      observer.disconnect()
+    }
+  }, [ref])
 }
 
 export type FloorPlanProps = {
@@ -227,18 +265,20 @@ export default function FloorPlan({
     [],
   )
 
+  const wrapper = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     applyQuarterToAll(0)
   }, [])
 
-  useCanvasMeasureFix()
+  useCanvasMeasureFix(wrapper)
 
   const onWheel = useCallback((e: React.WheelEvent) => {
     setZoomMul((z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z * (e.deltaY > 0 ? 0.92 : 1.087))))
   }, [])
 
   return (
-    <div className="scene" onWheel={onWheel}>
+    <div className="scene" ref={wrapper} onWheel={onWheel}>
       <Canvas
         flat
         dpr={[1, 2]}

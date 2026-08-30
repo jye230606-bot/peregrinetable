@@ -15,22 +15,28 @@ console.log('seeded bookings today:', bookings.length)
 console.log('venue audit:', d.auditVenue().length ? d.auditVenue() : 'PASS')
 
 for (const party of [2, 4, 6, 8]) {
+  const at19 = d.at(today, '19:00')
   const counts: Record<string, number> = {}
   for (const t of tables) {
-    const s = d.tableState(t, today, party, bookings)
+    const s = d.tableStateAt(t, at19, party, bookings)
     counts[s] = (counts[s] ?? 0) + 1
   }
-  console.log(`party ${party}:`, JSON.stringify(counts))
+  console.log(`party ${party} @ 19:00:`, JSON.stringify(counts))
+}
+
+for (const t of tables.slice(0, 3)) {
+  console.log(`occupancy ${t.label}:`, d.tableOccupancy(t, today, bookings))
 }
 
 const t1 = tables.find((x) => x.id === 'd1')!
 console.log('D1 slots for 4:', d.availableSlots(t1, today, 4, bookings).map((s) => d.timeLabel(s)).join(' '))
 
-const full = tables.find((x) => d.tableState(x, today, 2, bookings) === 'full')
-if (full) {
-  const alt = d.nearestAlternative(full, tables, today, 2, bookings)
-  console.log(`full ${full.label} → alt`, alt ? `${alt.table.label} @ ${d.timeLabel(alt.slot)}` : 'none')
-} else console.log('no fully-booked 2-top today')
+const when = d.at(today, '19:00')
+const taken = tables.find((x) => d.tableStateAt(x, when, 2, bookings) === 'booked')
+if (taken) {
+  const alts = d.alternativesAt(taken, tables, when, 2, bookings, 3)
+  console.log(`taken at 19:00: ${taken.label} → alternatives`, alts.map((t) => t.label).join(', ') || 'none')
+} else console.log('every table is free at 19:00 today')
 
 const slots = d.allSlots(today)
 console.log('slots/day:', slots.length, 'first', d.timeLabel(slots[0]), 'last', d.timeLabel(slots[slots.length - 1]))
