@@ -13,8 +13,13 @@ const KEY_BOOKINGS = 'peacock.bookings.v2'
 const KEY_SESSION = 'peacock.session.v1'
 const KEY_SEEDED = 'peacock.seeded.v2'
 
-/** Placeholder owner auth. Deliberately trivial — a real one replaces it whole. */
-const OWNER_PASSCODE = '2468'
+/**
+ * Placeholder owner auth. Deliberately trivial — a real one replaces it whole,
+ * so nothing elaborate is built on top of it. The credentials are the literal
+ * words, which is the point: this is a stand-in, not a security boundary.
+ */
+const OWNER_USERNAME = 'username'
+const OWNER_PASSWORD = 'password'
 
 const REF_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // no I/O/0/1
 
@@ -144,8 +149,8 @@ export const localAdapter: DataAdapter = {
     return this.updateBooking(id, { status: 'cancelled' })
   },
 
-  async signIn(passcode: string): Promise<Session | null> {
-    if (passcode.trim() !== OWNER_PASSCODE) return null
+  async signIn(username: string, password: string): Promise<Session | null> {
+    if (username.trim() !== OWNER_USERNAME || password !== OWNER_PASSWORD) return null
     session = { role: 'owner', since: new Date().toISOString() }
     write(KEY_SESSION, session)
     return session

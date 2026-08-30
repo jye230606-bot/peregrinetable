@@ -125,7 +125,14 @@ export default function TableMesh({ table, state, selected, onSelect, onHover, l
         }}
       />
       {label ? (
-        <Html position={[0, TABLE_HEIGHT + 0.34, 0]} center zIndexRange={[8, 0]} pointerEvents="none">
+        <Html
+          position={[0, TABLE_HEIGHT + 0.34, 0]}
+          center
+          zIndexRange={[8, 0]}
+          // The label is a caption, not a target: its wrapper must not eat the
+          // click meant for the table underneath it.
+          style={{ pointerEvents: 'none' }}
+        >
           {label}
         </Html>
       ) : null}

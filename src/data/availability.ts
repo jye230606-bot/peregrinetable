@@ -83,55 +83,19 @@ function withinService(start: Date, end: Date, _date: DateKey): boolean {
 }
 
 /**
- * How a table should read on the floor plan. Four states, no legend —
- * the desaturation does the explaining (art direction §4).
+ * How booked a table is across a whole day — the owner floor view's read.
+ * Free all day advances; anything with a booking on it sits back; a table with
+ * nothing left recedes fully. Three states, still no legend (§4).
  */
-export function tableState(
+export function tableOccupancy(
   table: Table,
   date: DateKey,
-  partySize: number,
   bookings: Booking[],
-): TableState {
-  if (table.seats < partySize) return 'too-small'
-  const open = availableSlots(table, date, partySize, bookings).length
-  if (open === 0) return 'full'
-  const total = bookableSlots(date, partySize).length
-  // 'Partly' means scarce, not merely 'not empty'. Kept narrow on purpose: if
-  // most of the room sat in the middle band the floor plan would read as one
-  // flat value, and the desaturation would stop explaining anything (§4).
-  return open <= Math.max(2, total * 0.25) ? 'partly' : 'available'
-}
-
-/** Nearest alternative to a table that cannot take the party — never a dead click. */
-export function nearestAlternative(
-  from: Table,
-  tables: Table[],
-  date: DateKey,
-  partySize: number,
-  bookings: Booking[],
-  near?: Date,
-): { table: Table; slot: Date } | null {
-  const candidates = tables
-    .filter((t) => t.id !== from.id && t.seats >= partySize)
-    .map((t) => ({ t, slots: availableSlots(t, date, partySize, bookings) }))
-    .filter((c) => c.slots.length > 0)
-
-  if (!candidates.length) return null
-
-  const target = near?.getTime() ?? new Date(`${date}T19:00:00`).getTime()
-
-  let best: { table: Table; slot: Date; cost: number } | null = null
-  for (const { t, slots } of candidates) {
-    // Distance in metres, then distance in time — same zone and a close time
-    // beats a perfect time across the room.
-    const metres = Math.hypot(t.x - from.x, t.y - from.y)
-    for (const slot of slots) {
-      const minutes = Math.abs(slot.getTime() - target) / 60_000
-      const cost = minutes + metres * 6 + (t.zone === from.zone ? 0 : 30)
-      if (!best || cost < best.cost) best = { table: t, slot, cost }
-    }
-  }
-  return best ? { table: best.table, slot: best.slot } : null
+): Extract<TableState, 'available' | 'partly' | 'full'> {
+  const mine = bookingsFor(table.id, bookings).filter(holdsTable)
+  if (!mine.length) return 'available'
+  // A party of two fits every table here, so this reads as occupancy, not fit.
+  return availableSlots(table, date, 2, bookings).length ? 'partly' : 'full'
 }
 
 /** What a table is doing right now / next — for the owner floor view. */

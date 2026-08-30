@@ -448,3 +448,195 @@ textarea.field {
   resize: vertical;
   font-family: Karla, sans-serif;
 }
+
+/* --- Owner console --------------------------------------------------- */
+
+.btn--sm {
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+.app__bar--owner {
+  gap: 24px;
+}
+
+.owner-nav {
+  display: flex;
+  gap: 16px;
+}
+
+.owner-nav__link {
+  font-family: Jost, sans-serif;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--mv-ink) 45%, transparent);
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+  transition: color 160ms var(--mv-ease);
+}
+
+.owner-nav__link:hover { color: var(--mv-ink); }
+
+.owner-nav__link.is-current {
+  color: var(--mv-ink);
+  border-bottom-color: var(--mv-ink);
+}
+
+.owner-bar__out { margin-left: auto; }
+
+.login {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 360px;
+}
+
+.datebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--mv-stone-top);
+  border-bottom: 1px solid var(--mv-hairline);
+  flex: 0 0 auto;
+}
+
+.datebar__label { min-width: 200px; }
+.datebar__date { width: 168px; }
+.datebar__spacer { flex: 1 1 auto; }
+
+.summary-row {
+  display: flex;
+  align-items: stretch;
+  background: var(--mv-stone-top);
+  border-bottom: 1px solid var(--mv-hairline);
+  flex: 0 0 auto;
+}
+
+/* Inside the owner's row the summary shares space with the exit button, so it
+   must flex rather than claim the full width. */
+.summary-row .summary {
+  border-bottom: 0;
+  width: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.summary-row__exit { margin: 8px 24px 8px 0; align-self: center; }
+
+/* Run sheet */
+
+.app__body--sheet {
+  display: block;
+  padding: 24px;
+  background: var(--mv-stone-light);
+}
+
+.sheet__empty { margin: 0; }
+
+.sheet__service { margin-bottom: 32px; }
+
+.sheet__heading {
+  margin: 0 0 8px;
+  font-weight: 300;
+}
+
+.sheet {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--mv-stone-top);
+  border: 1px solid var(--mv-hairline);
+  border-radius: var(--mv-radius);
+}
+
+.sheet th,
+.sheet td {
+  text-align: left;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--mv-hairline);
+  vertical-align: middle;
+}
+
+/* .label is a block-level field caption; inside a table it has to stay a cell. */
+.sheet th.label {
+  display: table-cell;
+  margin: 0;
+}
+.sheet tbody tr:last-child td { border-bottom: 0; }
+
+.sheet__row.is-released td { color: color-mix(in srgb, var(--mv-ink) 45%, transparent); }
+
+.sheet__notes {
+  max-width: 220px;
+  color: color-mix(in srgb, var(--mv-ink) 60%, transparent);
+}
+
+.sheet__actions-head { text-align: right; }
+
+.sheet__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.sheet__edit-row td {
+  background: var(--mv-stone-light);
+  padding: 16px;
+}
+
+.edit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.edit__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 160px;
+}
+
+.edit__field--narrow { flex: 0 0 104px; }
+.edit__field--wide { flex: 2 1 280px; }
+
+.edit__actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* Owner floor: table pins and the per-table day list */
+
+.pin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: var(--mv-stone-top);
+  border: 1px solid var(--mv-hairline);
+  border-radius: var(--mv-radius);
+  font-family: Karla, sans-serif;
+  font-size: 11px;
+  color: var(--mv-ink);
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: none;
+}
+
+.pin__party { color: color-mix(in srgb, var(--mv-ink) 45%, transparent); }
+
+.day-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--mv-hairline);
+}
+
+.day-row:last-child { border-bottom: 0; }
+.day-row.is-released { color: color-mix(in srgb, var(--mv-ink) 45%, transparent); }
+.day-row__time { font-family: Jost, sans-serif; letter-spacing: 0.08em; }

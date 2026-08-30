@@ -47,7 +47,7 @@ export interface DataAdapter {
   createBooking(input: NewBooking): Promise<Booking>
   updateBooking(id: string, patch: Partial<Booking>): Promise<Booking>
   cancelBooking(id: string): Promise<Booking>
-  signIn(passcode: string): Promise<Session | null>
+  signIn(username: string, password: string): Promise<Session | null>
   signOut(): Promise<void>
   currentUser(): Session | null
 }
