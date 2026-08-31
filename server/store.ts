@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import type { Booking } from '../src/data/types'
+import type { Booking } from '../src/data/types.js'
 
 /**
  * Where bookings actually live.

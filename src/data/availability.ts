@@ -1,6 +1,6 @@
-import type { Booking, DateKey, Table } from './types'
-import { service } from './venue'
-import { addMinutes, allSlots, occupancyMinutes, sittingFor } from './time'
+import type { Booking, DateKey, Table } from './types.js'
+import { service } from './venue.js'
+import { addMinutes, allSlots, occupancyMinutes, sittingFor } from './time.js'
 
 /**
  * Availability. One rule, applied everywhere:

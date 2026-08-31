@@ -1,5 +1,5 @@
 import { createServer } from 'node:http'
-import { configFromEnv, handle, type ApiRequest } from './api'
+import { configFromEnv, handle, type ApiRequest } from './api.js'
 
 /** The API on its own port for local work. Vite proxies /api here. */
 

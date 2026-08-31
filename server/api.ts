@@ -1,6 +1,6 @@
-import type { Booking, NewBooking } from '../src/data/types'
-import { checkBooking, sanitise } from '../src/data/rules'
-import { venueDateKey } from '../src/data/time'
+import type { Booking, NewBooking } from '../src/data/types.js'
+import { checkBooking, sanitise } from '../src/data/rules.js'
+import { venueDateKey } from '../src/data/time.js'
 import {
   COOKIE,
   clearAttempts,
@@ -12,8 +12,8 @@ import {
   sessionCookie,
   tooManyAttempts,
   verifyPassword,
-} from './auth'
-import { storeFromEnv, type Store } from './store'
+} from './auth.js'
+import { storeFromEnv, type Store } from './store.js'
 
 /**
  * The API, written against plain request/response shapes so the same handlers

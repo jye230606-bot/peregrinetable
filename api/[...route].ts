@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { configFromEnv, handle, type ApiRequest } from '../server/api'
+import { configFromEnv, handle, type ApiRequest } from '../server/api.js'
 
 /**
  * Vercel entry point. One catch-all, delegating to the same handlers the local

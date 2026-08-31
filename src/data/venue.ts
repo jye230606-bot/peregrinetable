@@ -1,4 +1,4 @@
-import type { Table } from './types'
+import type { Table } from './types.js'
 
 /**
  * The Peacock, South Yarra — hand-authored floor plan.

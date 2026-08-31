@@ -1,5 +1,5 @@
-import { VENUE_TZ, service } from './venue'
-import type { DateKey } from './types'
+import { VENUE_TZ, service } from './venue.js'
+import type { DateKey } from './types.js'
 
 /** Venue-local time helpers. Everything the app shows is venue-local. */
 

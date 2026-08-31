@@ -1,7 +1,7 @@
-import type { Booking, NewBooking, Table } from './types'
-import { bookingSpan, bookingsFor, holdsTable } from './availability'
-import { occupancyMinutes } from './time'
-import { tables } from './venue'
+import type { Booking, NewBooking, Table } from './types.js'
+import { bookingSpan, bookingsFor, holdsTable } from './availability.js'
+import { occupancyMinutes } from './time.js'
+import { tables } from './venue.js'
 
 /**
  * The rules a booking has to satisfy, in one place and independent of where
